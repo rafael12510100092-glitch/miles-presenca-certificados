@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QR das Aulas · MILES</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Manrope:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="assets/styles.css?v=3">
+  <style>
+    .qr-link{ font-size:.78rem; word-break:break-all; } .qr-link a{ color:var(--gold-lt); }
+    .dur-pick{ display:inline-flex; flex-direction:column; gap:.25rem; font-size:.7rem; font-weight:700;
+      letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); }
+    .dur-pick select{ font-family:var(--sans); font-weight:700; font-size:.9rem; color:var(--ink); text-transform:none;
+      letter-spacing:0; background:var(--bg-3); border:1px solid var(--line); border-radius:999px; padding:.45rem .9rem; cursor:pointer; }
+    .dur-pick select:disabled{ opacity:.4; cursor:not-allowed; }
+    .qr-box .qr-logo{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:19% !important; height:19% !important;
+      object-fit:contain; background:#F4EFE2; padding:4px; border-radius:7px; z-index:2; box-shadow:0 0 0 3px #F4EFE2; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar" id="topbar"></header>
+    <div class="dochead"><span><b>Instituto MILES</b></span><span class="mid">Diretoria de Inovação</span><span>Proc. Seletivo · 2026</span></div>
+    <div class="doc-rule"></div>
+
+    <section class="section">
+      <div class="row between" style="align-items:flex-end;gap:1rem">
+        <div class="stack reveal">
+          <span class="eyebrow">Projeto 1 · Painel do instrutor</span>
+          <h1 style="font-size:clamp(1.8rem,4vw,2.6rem)">QR Code das aulas</h1>
+          <p class="lead">Projete na tela durante a aula. Cada QR já tem a aula embutida.
+            No modo <b>rotativo</b>, <b>você escolhe a duração</b> de cada QR — quando ele gira,
+            o print/foto antigo deixa de valer. Mais curto = mais seguro; mais longo = mais tempo para o público escanear.</p>
+        </div>
+        <div class="reveal d2" style="display:flex;gap:.8rem;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end">
+          <label class="dur-pick" for="dur">Duração do QR
+            <select id="dur" aria-label="Duração de cada QR Code">
+              <option value="30">30 segundos</option>
+              <option value="60">1 minuto</option>
+              <option value="120">2 minutos</option>
+              <option value="300">5 minutos</option>
+              <option value="600">10 minutos</option>
+            </select>
+          </label>
+          <div class="switch" role="group" aria-label="Modo do QR">
+            <button id="mode-rot" class="on" type="button" aria-pressed="true">Rotativo (anti-reuso)</button>
+            <button id="mode-stat" type="button" aria-pressed="false">Estático (avaliação)</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="banner" class="notice notice--info hidden" style="margin:1.2rem 0" role="status" aria-live="polite"></div>
+
+      <div class="qr-grid" id="qr-grid" style="margin-top:1.4rem"></div>
+
+      <p class="muted reveal" style="margin-top:1.4rem;font-size:.86rem" id="legend"></p>
+    </section>
+
+    <footer class="foot">Sem celular para escanear? Use o modo <b>Estático</b> e clique no link
+      "abrir no navegador" embaixo de cada QR para testar no próprio computador.</footer>
+  </div>
+
+  <!-- Lib de QR vendorizada localmente (funciona offline / sem depender de CDN) -->
+  <script src="assets/vendor/qrcode.min.js"></script>
+  <script src="config.js"></script>
+  <script src="assets/app.js?v=3"></script>
+  <script>
+  (function () {
+    var cfg = MILES.cfg;
+    MILES.mountTopbar('qrcodes.html');
+
+    var grid = document.getElementById('qr-grid');
+    var banner = document.getElementById('banner');
+    var legend = document.getElementById('legend');
+    var btnRot = document.getElementById('mode-rot');
+    var btnStat = document.getElementById('mode-stat');
+
+    var aulas = (cfg.AULAS || []).slice();
+    var modo = 'rotativo';
+    var timer = null;
+    var presencaURL = new URL('presenca.html', location.href).href;
+
+    // duração escolhida pelo instrutor (persistida entre sessões)
+    var dur = document.getElementById('dur');
+    var periodo = parseInt(localStorage.getItem('miles-qr-dur') || '120', 10);
+    if ([30, 60, 120, 300, 600].indexOf(periodo) === -1) periodo = 120;
+    dur.value = String(periodo);
+    function fmtDur(s) { return s < 60 ? s + ' s' : (s / 60) + ' min'; }
+    dur.addEventListener('change', function () {
+      periodo = parseInt(dur.value, 10) || 120;
+      try { localStorage.setItem('miles-qr-dur', String(periodo)); } catch (e) {}
+      if (modo === 'rotativo') cicloRotativo();
+    });
+
+    grid.innerHTML = aulas.map(function (a) {
+      return '<div class="card qr-card reveal">' +
+        '<h3>' + MILES.escapeHTML(a.titulo) + '</h3>' +
+        '<div class="qr-box"><div id="qc' + a.aulaId + '"></div><img class="qr-logo" src="assets/miles-m.png" alt=""></div>' +
+        '<div class="qr-ring" id="ring' + a.aulaId + '"><i></i></div>' +
+        '<p class="qr-meta" id="meta' + a.aulaId + '">Aula ' + a.aulaId + '</p>' +
+        '<p class="qr-link"><a id="lnk' + a.aulaId + '" href="#" target="_blank" rel="noopener">abrir no navegador</a></p>' +
+      '</div>';
+    }).join('');
+
+    function setBanner(type, html) { banner.className = 'notice notice--' + type; banner.innerHTML = html; banner.classList.remove('hidden'); }
+
+    function draw(aulaId, token) {
+      var url = presencaURL + '?aula=' + aulaId + (token ? '&tk=' + encodeURIComponent(token) : '');
+      var lnk = document.getElementById('lnk' + aulaId); if (lnk) lnk.href = url;
+      var box = document.getElementById('qc' + aulaId);
+      if (!box) return;
+      if (typeof QRCode === 'undefined') {
+        setBanner('bad', '<span class="ic" aria-hidden="true">⚠</span><span>A biblioteca de QR não carregou (verifique a conexão/arquivo <code>assets/vendor/qrcode.min.js</code>). Use os links "abrir no navegador" abaixo de cada aula.</span>');
+        return;
+      }
+      box.innerHTML = '';
+      new QRCode(box, { text: url, width: 460, height: 460, colorDark: '#0B0B0B', colorLight: '#F4EFE2', correctLevel: QRCode.CorrectLevel.H });
+      var meta = document.getElementById('meta' + aulaId);
+      if (meta) meta.textContent = (token ? '' : '⚠ sem token — ') + 'aula=' + aulaId;
+    }
+
+    function animarRing(ms) {
+      aulas.forEach(function (a) {
+        var bar = document.querySelector('#ring' + a.aulaId + ' > i'); if (!bar) return;
+        bar.style.transition = 'none'; bar.style.transform = 'scaleX(1)';
+        void bar.offsetWidth;
+        bar.style.transition = 'transform ' + ms + 'ms linear'; bar.style.transform = 'scaleX(0)';
+      });
+    }
+    function pararRing() {
+      aulas.forEach(function (a) { var bar = document.querySelector('#ring' + a.aulaId + ' > i'); if (bar) { bar.style.transition = 'none'; bar.style.transform = 'scaleX(1)'; } });
+    }
+
+    async function cicloRotativo() {
+      clearTimeout(timer);
+      try {
+        var r = await MILES.api('emitirToken', { periodo: periodo });
+        if (!r || !r.ok) throw new Error((r && r.erro) || 'resposta inválida');
+        aulas.forEach(function (a) { draw(a.aulaId, r.rotativos[a.aulaId]); });
+        var restante = Math.max(1500, (r.expiraEm || (Date.now() + periodo * 1000)) - Date.now());
+        animarRing(restante);
+        if (typeof QRCode !== 'undefined') banner.classList.add('hidden');
+        legend.textContent = 'Modo rotativo: cada QR dura ' + fmtDur(r.periodo || periodo) +
+          ' e se renova sozinho. O servidor aceita o token por ~1–2× esse tempo (margem para escanear e preencher). ' +
+          'Menor = mais seguro; maior = mais tempo para o público escanear.' + (r.demo ? ' [demonstração]' : '');
+        timer = setTimeout(cicloRotativo, restante + 600);
+      } catch (e) {
+        pararRing();
+        setBanner('bad', '<span class="ic" aria-hidden="true">⚠</span><span>Não foi possível obter os tokens: ' +
+          MILES.escapeHTML(e.message) + '. <b>Configure o WEB_APP_URL em <code>config.js</code></b>.</span>');
+        aulas.forEach(function (a) { draw(a.aulaId, ''); });
+        legend.textContent = '';
+      }
+    }
+
+    async function modoEstatico() {
+      clearTimeout(timer); pararRing();
+      try {
+        var r = await MILES.api('emitirToken', { periodo: periodo });
+        if (!r || !r.ok) throw new Error((r && r.erro) || 'resposta inválida');
+        aulas.forEach(function (a) { draw(a.aulaId, r.estaticos[a.aulaId]); });
+        if (typeof QRCode !== 'undefined') banner.classList.add('hidden');
+        legend.textContent = 'Modo estático: códigos fixos, convenientes para avaliação/impressão. ' +
+          'Em produção, desative (ALLOW_STATIC=false) para forçar o anti-reuso.' + (r.demo ? ' [demonstração]' : '');
+      } catch (e) {
+        setBanner('bad', '<span class="ic" aria-hidden="true">⚠</span><span>Backend indisponível: ' + MILES.escapeHTML(e.message) +
+          '. Configure o WEB_APP_URL em <code>config.js</code>.</span>');
+        aulas.forEach(function (a) { draw(a.aulaId, ''); });
+      }
+    }
+
+    function setModo(m) {
+      modo = m;
+      btnRot.classList.toggle('on', m === 'rotativo'); btnRot.setAttribute('aria-pressed', m === 'rotativo');
+      btnStat.classList.toggle('on', m === 'estatico'); btnStat.setAttribute('aria-pressed', m === 'estatico');
+      dur.disabled = (m === 'estatico'); // duração só faz sentido no rotativo
+      if (m === 'rotativo') cicloRotativo(); else modoEstatico();
+    }
+    btnRot.addEventListener('click', function () { setModo('rotativo'); });
+    btnStat.addEventListener('click', function () { setModo('estatico'); });
+
+    setModo('rotativo');
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) clearTimeout(timer);
+      else if (modo === 'rotativo') cicloRotativo();
+    });
+  })();
+  </script>
+</body>
+</html>

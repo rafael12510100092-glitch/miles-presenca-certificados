@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registrar presença · MILES</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Manrope:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="assets/styles.css?v=3">
+  <style>
+    .sheet { max-width: 480px; margin: 0 auto; }
+    .aula-chip { display:inline-flex; align-items:center; gap:.5rem; background:var(--grad-gold); color:#1A1305;
+      font-weight:700; font-size:.82rem; padding:.4rem .85rem; border-radius:999px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar" id="topbar"></header>
+    <div class="dochead"><span><b>Instituto MILES</b></span><span class="mid">Diretoria de Inovação</span><span>Proc. Seletivo · 2026</span></div>
+    <div class="doc-rule"></div>
+
+    <section class="section">
+      <div class="sheet">
+
+        <!-- estado: sem aula na URL -->
+        <div id="view-sem-aula" class="card hidden stack center reveal">
+          <div class="seal-slot" style="margin:0 auto"></div>
+          <h2>Escaneie o QR da aula</h2>
+          <p>Esta página registra presença a partir do QR Code exibido na tela da aula.
+             Abra a câmera e aponte para o código.</p>
+          <a class="btn btn--ghost" href="index.html">Voltar ao início</a>
+        </div>
+
+        <!-- estado: formulário -->
+        <div id="view-form" class="hidden">
+          <div class="stack reveal" style="margin-bottom:1.2rem">
+            <span class="eyebrow">Projeto 1 · Registro de presença</span>
+            <h1 style="font-size:clamp(1.7rem,5vw,2.3rem)">Confirmar presença</h1>
+            <p class="row" style="gap:.6rem"><span class="aula-chip" id="aula-chip">Aula</span>
+               <span class="muted" id="seminario"></span></p>
+          </div>
+
+          <div class="notice notice--info reveal" style="margin-bottom:1rem;font-size:.84rem">
+            <span class="ic" aria-hidden="true">🧪</span>
+            <span><b>Ambiente de avaliação.</b> Use dados fictícios (ex.: CPF 111.111.111-11). Não insira dados pessoais reais.</span>
+          </div>
+
+          <form id="form" class="card reveal d1" novalidate>
+            <div class="field">
+              <label for="nome">Nome completo <span class="req" aria-hidden="true">*</span></label>
+              <input id="nome" name="nome" type="text" autocomplete="name" required aria-required="true" aria-describedby="err-nome" placeholder="Como no seu documento">
+              <span class="err" id="err-nome" role="alert"></span>
+            </div>
+            <div class="field">
+              <label for="cpf">CPF <span class="req" aria-hidden="true">*</span></label>
+              <input id="cpf" name="cpf" type="tel" inputmode="numeric" autocomplete="off" required aria-required="true" aria-describedby="hint-cpf err-cpf" placeholder="000.000.000-00" maxlength="14">
+              <span class="hint" id="hint-cpf">Usado apenas para identificar você e emitir o certificado. Não validamos os dígitos.</span>
+              <span class="err" id="err-cpf" role="alert"></span>
+            </div>
+            <div class="field">
+              <label for="email">E-mail <span class="req" aria-hidden="true">*</span></label>
+              <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required aria-required="true" aria-describedby="err-email" placeholder="voce@email.com">
+              <span class="err" id="err-email" role="alert"></span>
+            </div>
+
+            <div class="consent">
+              <input type="checkbox" id="consent" aria-describedby="consent-text">
+              <label for="consent" id="consent-text">Li e <b>autorizo</b> a coleta do meu <b>CPF</b>, nome e e-mail para
+                registro de presença e emissão de certificado, conforme a
+                <button type="button" class="link-like" id="open-lgpd">LGPD (Lei&nbsp;13.709/2018)</button>.</label>
+            </div>
+
+            <button class="btn btn--gold btn--block btn--lg" id="submit" type="submit" disabled>Registrar presença</button>
+            <div id="form-msg" class="notice hidden" style="margin-top:1rem" role="status" aria-live="polite"></div>
+          </form>
+        </div>
+
+        <!-- estado: sucesso -->
+        <div id="view-ok" class="card card--gold hidden stack center reveal" role="status" aria-live="polite">
+          <div class="success-seal" id="ok-seal" aria-hidden="true"></div>
+          <h2 id="ok-title" tabindex="-1">Presença registrada</h2>
+          <p id="ok-text"></p>
+          <div class="dots" id="ok-dots" style="justify-content:center;margin:.4rem 0" aria-hidden="true"></div>
+          <p class="muted" id="ok-progress" style="font-size:.9rem"></p>
+          <a class="btn btn--ghost" href="certificado.html" id="ok-cert" style="margin-top:.4rem">Ver meu certificado</a>
+        </div>
+
+      </div>
+    </section>
+
+    <footer class="foot">Seus dados ficam na planilha do seminário. Para correção ou exclusão, fale com a organização.</footer>
+  </div>
+
+  <!-- modal LGPD -->
+  <div id="lgpd" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="lgpd-title">
+    <div class="box stack">
+      <h3 id="lgpd-title">Aviso de privacidade (LGPD)</h3>
+      <p><b>Controlador:</b> Instituto MILES. <b>Contato do encarregado (DPO):</b> privacidade@institutomiles.com.br.</p>
+      <p><b>Dados coletados:</b> nome completo, CPF e e-mail.</p>
+      <p><b>Finalidade:</b> identificar você de forma única, evitar presença duplicada e emitir o
+         certificado do seminário com seus dados corretos.</p>
+      <p><b>Base legal:</b> consentimento do titular (art. 7º, I, da LGPD).</p>
+      <p><b>Armazenamento e retenção:</b> em uma planilha do Google Sheets sob responsabilidade da
+         organização, mantidos pelo período do seminário e da emissão dos certificados.</p>
+      <p><b>Seus direitos (art. 18):</b> acesso, correção e exclusão dos dados a qualquer momento,
+         bastando contatar a organização.</p>
+      <button class="btn btn--ghost" id="close-lgpd" type="button">Entendi</button>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="assets/app.js?v=3"></script>
+  <script>
+  (function () {
+    var $ = MILES.$;
+    MILES.mountTopbar('presenca.html');
+
+    var aulaId = parseInt(MILES.qs('aula'), 10);
+    var token = MILES.qs('tk') || '';
+    var cfg = MILES.cfg;
+
+    var vSem = $('#view-sem-aula'), vForm = $('#view-form'), vOk = $('#view-ok');
+
+    if (!(aulaId >= 1 && aulaId <= (cfg.TOTAL_AULAS || 4))) {
+      $('#view-sem-aula .seal-slot').innerHTML = '<img src="assets/miles-logo.png" alt="Instituto MILES" style="width:210px;max-width:80%">';
+      vSem.classList.remove('hidden');
+      return;
+    }
+
+    var aula = (cfg.AULAS || []).filter(function (a) { return a.aulaId === aulaId; })[0];
+    $('#aula-chip').textContent = aula ? aula.titulo.replace(/^Aula \d+\s*—\s*/, 'Aula ' + aulaId + ' · ') : ('Aula ' + aulaId);
+    $('#seminario').textContent = cfg.SEMINARIO || '';
+    vForm.classList.remove('hidden');
+
+    MILES.maskCPF($('#cpf'));
+
+    // trava o botão até o consentimento
+    var consent = $('#consent'), submit = $('#submit');
+    consent.addEventListener('change', function () { submit.disabled = !consent.checked; });
+
+    // modal LGPD acessível (foco + Esc + retorno de foco)
+    var modal = $('#lgpd'), gatilho = null;
+    function abrirModal() { gatilho = document.activeElement; modal.classList.remove('hidden'); $('#close-lgpd').focus(); }
+    function fecharModal() { modal.classList.add('hidden'); if (gatilho) gatilho.focus(); }
+    $('#open-lgpd').addEventListener('click', abrirModal);
+    $('#close-lgpd').addEventListener('click', fecharModal);
+    modal.addEventListener('click', function (e) { if (e.target === modal) fecharModal(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.classList.contains('hidden')) fecharModal(); });
+
+    function setErr(id, msg) {
+      $('#err-' + id).textContent = msg || '';
+      var inp = $('#' + id); inp.classList.toggle('is-invalid', !!msg);
+      if (msg) inp.setAttribute('aria-invalid', 'true'); else inp.removeAttribute('aria-invalid');
+    }
+    function msg(type, html) { var m = $('#form-msg'); m.className = 'notice notice--' + type; m.innerHTML = html; m.classList.remove('hidden'); }
+
+    function valida() {
+      var nome = $('#nome').value.trim(), cpf = MILES.onlyDigits($('#cpf').value), email = $('#email').value.trim();
+      setErr('nome', nome.length < 3 ? 'Informe seu nome completo.' : '');
+      setErr('cpf', cpf.length !== 11 ? 'O CPF deve ter 11 dígitos.' : '');
+      setErr('email', !MILES.validEmail(email) ? 'Informe um e-mail válido.' : '');
+      var ok = nome.length >= 3 && cpf.length === 11 && MILES.validEmail(email);
+      if (!consent.checked) { msg('bad', '<span class="ic" aria-hidden="true">⚠</span> É necessário aceitar o aviso de consentimento (LGPD).'); ok = false; }
+      if (!ok) { var first = document.querySelector('.is-invalid'); if (first) first.focus(); }
+      return ok;
+    }
+
+    function mostrarSucesso(resp, duplicada) {
+      vForm.classList.add('hidden');
+      $('#ok-seal').innerHTML =
+        '<svg viewBox="0 0 100 100" width="96" height="96" aria-hidden="true">' +
+          '<circle cx="50" cy="50" r="46" fill="none" stroke="#D4AF37" stroke-width="2"/>' +
+          '<circle cx="50" cy="50" r="40" fill="#0E0E0F" stroke="#D4AF37" stroke-width="0.6"/>' +
+          '<path class="check-draw" d="M34 51 l11 11 l22 -24" fill="none" stroke="#57C08C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '</svg>';
+      $('#ok-title').textContent = duplicada ? 'Você já estava presente' : 'Presença registrada!';
+      $('#ok-text').innerHTML = (duplicada
+        ? 'Sua presença nesta aula já constava no sistema. Está tudo certo.'
+        : 'Sua presença na <b>Aula ' + aulaId + '</b> foi registrada com sucesso.');
+      var total = resp.totalAluno || 0, min = cfg.MIN_PRESENCAS || 3, tot = cfg.TOTAL_AULAS || 4, dots = '';
+      for (var i = 1; i <= tot; i++) dots += '<span class="dot ' + (i <= total ? 'on' : 'miss') + '">' + i + '</span>';
+      $('#ok-dots').innerHTML = dots;
+      $('#ok-progress').textContent = total >= min
+        ? 'Você já tem ' + total + ' de ' + tot + ' aulas — presença suficiente para o certificado.'
+        : 'Você tem ' + total + ' de ' + tot + ' aulas. Faltam ' + (min - total) + ' para liberar o certificado.';
+      vOk.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      $('#ok-title').focus();
+    }
+
+    $('#form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      $('#form-msg').classList.add('hidden');
+      if (!valida()) return;
+      var btn = $('#submit'); btn.disabled = true; btn.setAttribute('aria-busy', 'true');
+      var rotulo = btn.innerHTML; btn.innerHTML = '<span class="spin" aria-hidden="true"></span> Registrando…';
+      try {
+        var resp = await MILES.api('registrarPresenca', {
+          aulaId: aulaId, nome: $('#nome').value.trim(), cpf: MILES.onlyDigits($('#cpf').value),
+          email: $('#email').value.trim(), consent: true, token: token,
+        });
+        if (resp.ok && resp.status === 'registrada') return mostrarSucesso(resp, false);
+        if (resp.ok && resp.status === 'duplicada') return mostrarSucesso(resp, true);
+        if (resp.status === 'token') msg('bad', '<span class="ic" aria-hidden="true">⛔</span> ' + MILES.escapeHTML(resp.motivo));
+        else msg('bad', '<span class="ic" aria-hidden="true">⚠</span> ' + MILES.escapeHTML(resp.motivo || resp.erro || 'Não foi possível registrar.'));
+      } catch (err) {
+        msg('bad', '<span class="ic" aria-hidden="true">⚠</span> ' + MILES.escapeHTML(err.message));
+      } finally {
+        btn.disabled = !consent.checked; btn.removeAttribute('aria-busy'); btn.innerHTML = rotulo;
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

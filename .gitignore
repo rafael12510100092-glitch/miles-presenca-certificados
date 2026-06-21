@@ -1,0 +1,17 @@
+# SO / editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Netlify
+.netlify/
+
+# Logs / temporários
+*.log
+.remember/
+
+# Apps Script (clasp) — caso use a CLI
+.clasprc.json
+.clasp.json

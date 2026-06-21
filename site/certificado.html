@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Certificado · MILES</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Manrope:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="assets/styles.css?v=3">
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar no-print" id="topbar"></header>
+    <div class="dochead no-print"><span><b>Instituto MILES</b></span><span class="mid">Diretoria de Inovação</span><span>Proc. Seletivo · 2026</span></div>
+    <div class="doc-rule no-print"></div>
+
+    <section class="section no-print">
+      <div class="stack reveal" style="max-width:560px">
+        <span class="eyebrow">Projeto 2 · Emissão de certificado</span>
+        <h1 style="font-size:clamp(1.8rem,4.4vw,2.6rem)">Seu certificado</h1>
+        <p class="lead">Informe seu <b>CPF</b>. Se você comparecer a pelo menos
+          <b>3 das 4 aulas</b>, o certificado é emitido na hora com seus dados.
+          Caso contrário, mostramos exatamente o que faltou.</p>
+      </div>
+
+      <form id="form" class="card reveal d1" style="max-width:560px;margin-top:1.2rem">
+        <div class="field">
+          <label for="cpf">CPF <span class="req" aria-hidden="true">*</span></label>
+          <input id="cpf" type="tel" inputmode="numeric" required aria-required="true" aria-describedby="err-cpf" placeholder="000.000.000-00" maxlength="14">
+          <span class="err" id="err-cpf" role="alert"></span>
+        </div>
+        <button class="btn btn--gold btn--block btn--lg" id="verificar" type="submit">Verificar elegibilidade</button>
+        <p class="muted" style="font-size:.82rem;margin-top:.7rem">Já tem um certificado e quer conferir a autenticidade?
+          <a href="verificar.html">Verificar pelo código →</a></p>
+      </form>
+
+      <div id="resultado" style="margin-top:1.6rem" role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- área imprimível / exportável -->
+    <div id="print-area"></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="assets/app.js?v=3"></script>
+  <script>
+  (function () {
+    var $ = MILES.$;
+    var cfg = MILES.cfg;
+    MILES.mountTopbar('certificado.html');
+    MILES.maskCPF($('#cpf'));
+
+    var resultado = $('#resultado');
+    var printArea = $('#print-area');
+
+    function hoje() {
+      try { return new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }); }
+      catch (e) { return new Date().toLocaleDateString(); }
+    }
+    function codigo(cpf) {
+      var d = MILES.onlyDigits(cpf), s = 0;
+      for (var i = 0; i < d.length; i++) s = (s * 31 + d.charCodeAt(i)) % 1000000;
+      return 'MILES-2026-' + ('00000' + s).slice(-6);
+    }
+
+    function certificadoHTML(r) {
+      var aulasTxt = r.presentes.map(function (n) { return n; }).join(', ');
+      return '' +
+      '<div class="cert-stage"><div class="certificate" id="cert">' +
+        '<span class="cert-corner tl"></span><span class="cert-corner tr"></span>' +
+        '<span class="cert-corner bl"></span><span class="cert-corner br"></span>' +
+        '<div class="cert-guilloche"></div>' +
+        '<div class="cert-inner">' +
+          '<img class="cert-logo" src="assets/miles-logo.png" alt="Instituto MILES">' +
+          '<div class="cert-title">Certificado de Conclusão</div>' +
+          '<div class="cert-sub">Certificamos que</div>' +
+          '<div class="cert-name">' + MILES.escapeHTML(r.nome) + '</div>' +
+          '<div class="cert-cpf">CPF ' + MILES.escapeHTML(r.cpfFormatado) + '</div>' +
+          '<div class="cert-body">concluiu o <b>' + MILES.escapeHTML(cfg.SEMINARIO || 'Seminário MILES') +
+            '</b> (' + MILES.escapeHTML(cfg.EDICAO || '') + '), com presença comprovada em ' +
+            '<b>' + r.qtd + ' de ' + r.total + ' aulas</b> (aulas ' + aulasTxt + '), ' +
+            'cumprindo o mínimo de ' + r.minimo + ' aulas (75%) exigido para certificação.</div>' +
+          '<div class="cert-foot">' +
+            '<div class="cert-sign"><div class="line"></div>' +
+              '<div class="who">' + MILES.escapeHTML(cfg.ASSINANTE_NOME || 'Coordenação') + '</div>' +
+              '<div class="role">' + MILES.escapeHTML(cfg.ASSINANTE_CARGO || '') + '</div></div>' +
+            '<div class="cert-sign"><div class="line"></div>' +
+              '<div class="who">' + hoje() + '</div>' +
+              '<div class="role">Data de emissão</div></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="cert-code">Código de verificação · ' + (r.codigo || codigo(r.cpf)) + '</div>' +
+      '</div></div>';
+    }
+
+    function dots(presentes, total) {
+      var s = '';
+      for (var i = 1; i <= total; i++) {
+        var on = presentes.indexOf(i) !== -1;
+        s += '<span class="dot ' + (on ? 'on' : 'miss') + '" title="Aula ' + i + (on ? ' · presente' : ' · ausente') + '">' + i + '</span>';
+      }
+      return s;
+    }
+
+    function renderElegivel(r) {
+      var cod = r.codigo || codigo(r.cpf);
+      printArea.innerHTML = certificadoHTML(r);
+      resultado.innerHTML =
+        '<div class="card card--gold reveal stack">' +
+          '<div class="row between"><span class="badge badge--ok">✓ Elegível</span>' +
+            '<span class="muted">' + r.qtd + '/' + r.total + ' aulas</span></div>' +
+          '<h2 id="res-title" tabindex="-1" style="margin:.2rem 0">Certificado liberado para ' + MILES.escapeHTML(r.nome) + '</h2>' +
+          '<div class="dots" style="margin:.2rem 0">' + dots(r.presentes, r.total) + '</div>' +
+          '<div class="row" style="margin-top:.6rem">' +
+            '<button class="btn btn--gold" id="baixar">↓ Baixar PDF</button>' +
+            '<button class="btn btn--ghost" id="emailcert">✉ Receber por e-mail</button>' +
+            '<a class="btn btn--ghost" href="verificar.html?c=' + encodeURIComponent(cod) + '">Verificar autenticidade</a>' +
+          '</div>' +
+          '<div id="email-msg" class="notice hidden" style="margin-top:.6rem" role="status" aria-live="polite"></div>' +
+          '<p class="muted" style="font-size:.8rem;margin-top:.5rem">Na janela de impressão, escolha ' +
+            '<b>“Salvar como PDF”</b> como destino — o certificado sai em A4 paisagem, com as cores. ' +
+            'Código: <b>' + cod + '</b>.</p>' +
+        '</div>';
+      printArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      $('#res-title').focus();
+      $('#baixar').addEventListener('click', function () { window.print(); });
+      $('#emailcert').addEventListener('click', async function () {
+        var b = this; b.disabled = true; b.setAttribute('aria-busy', 'true'); var t = b.innerHTML;
+        b.innerHTML = '<span class="spin" aria-hidden="true"></span> Enviando…';
+        var m = $('#email-msg');
+        try {
+          var resp = await MILES.api('enviarMeuCertificado', { cpf: r.cpf, siteUrl: location.origin });
+          if (resp.ok) { m.className = 'notice notice--ok'; m.innerHTML = '✉ Certificado enviado para <b>' + MILES.escapeHTML(resp.enviadoPara) + '</b>' + (resp.demo ? ' <i>(demonstração — nenhum e-mail real foi enviado)</i>' : '') + '.'; }
+          else { m.className = 'notice notice--bad'; m.innerHTML = '<span class="ic" aria-hidden="true">⚠</span> ' + MILES.escapeHTML(resp.erro || 'Não foi possível enviar.'); }
+          m.classList.remove('hidden');
+        } catch (e) { m.className = 'notice notice--bad'; m.innerHTML = '<span class="ic" aria-hidden="true">⚠</span> ' + MILES.escapeHTML(e.message); m.classList.remove('hidden'); }
+        finally { b.disabled = false; b.removeAttribute('aria-busy'); b.innerHTML = t; }
+      });
+    }
+
+    function renderNegado(r) {
+      printArea.innerHTML = '';
+      var faltam = (r.minimo || cfg.MIN_PRESENCAS) - r.qtd;
+      resultado.innerHTML =
+        '<div class="card reveal stack" style="border-color:rgba(151,54,42,.35)">' +
+          '<div class="row between"><span class="badge badge--bad">✕ Não elegível</span>' +
+            '<span class="muted">' + r.qtd + '/' + r.total + ' aulas</span></div>' +
+          '<h2 style="margin:.2rem 0">Certificado indisponível</h2>' +
+          '<div class="notice notice--bad"><span class="ic">⚠</span><span><b>' +
+            MILES.escapeHTML(r.motivo) + '</b></span></div>' +
+          '<p>Presença confirmada nas aulas marcadas abaixo. ' +
+            'Faltam <b>' + faltam + '</b> aula(s) para atingir o mínimo de ' + (r.minimo || cfg.MIN_PRESENCAS) + '.</p>' +
+          '<div class="dots">' + dots(r.presentes, r.total) + '</div>' +
+        '</div>';
+    }
+
+    function renderNaoEncontrado(r) {
+      printArea.innerHTML = '';
+      resultado.innerHTML =
+        '<div class="card reveal"><div class="notice notice--info"><span class="ic">ℹ</span><span>' +
+          MILES.escapeHTML(r.erro || 'Nenhuma presença encontrada para este CPF.') +
+          ' Confira o número ou registre presença nas aulas primeiro.</span></div></div>';
+    }
+
+    $('#form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var cpf = MILES.onlyDigits($('#cpf').value);
+      $('#err-cpf').textContent = '';
+      $('#cpf').classList.remove('is-invalid');
+      if (cpf.length !== 11) { $('#err-cpf').textContent = 'O CPF deve ter 11 dígitos.'; $('#cpf').classList.add('is-invalid'); return; }
+
+      var btn = $('#verificar'); btn.disabled = true; btn.setAttribute('aria-busy', 'true'); var t = btn.innerHTML;
+      btn.innerHTML = '<span class="spin" aria-hidden="true"></span> Verificando…';
+      resultado.innerHTML = '';
+      try {
+        var r = await MILES.api('consultarCertificado', { cpf: cpf });
+        if (!r.ok) { renderNaoEncontrado({ erro: r.erro }); return; }
+        if (!r.encontrado) renderNaoEncontrado(r);
+        else if (r.elegivel) renderElegivel(r);
+        else renderNegado(r);
+      } catch (err) {
+        resultado.innerHTML = '<div class="card"><div class="notice notice--bad"><span class="ic" aria-hidden="true">⚠</span><span>' +
+          MILES.escapeHTML(err.message) + '</span></div></div>';
+      } finally { btn.disabled = false; btn.removeAttribute('aria-busy'); btn.innerHTML = t; }
+    });
+
+    // permite pré-preencher via ?cpf=
+    var pre = MILES.qs('cpf');
+    if (pre) { $('#cpf').value = MILES.formatCPF(pre); }
+  })();
+  </script>
+</body>
+</html>
