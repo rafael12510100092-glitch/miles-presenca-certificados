@@ -138,7 +138,7 @@ function rotear_(dados, params) {
   try {
     var action = dados.action || params.action;
     switch (action) {
-      case 'emitirToken':           return json_(emitirToken_(dados.periodo || params.periodo));
+      case 'emitirToken':           return json_(emitirToken_(dados));
       case 'registrarPresenca':     return json_(registrarPresenca_(dados));
       case 'consultarCertificado':  return json_(consultarCertificado_(dados));
       case 'verificarCertificado':  return json_(verificarCertificado_(dados));
@@ -158,9 +158,19 @@ function rotear_(dados, params) {
 // =============================================================================
 
 /** Gera os tokens (rotativo da janela atual + estático) de TODAS as aulas.
- *  `periodo` (segundos) é a duração escolhida pelo instrutor no painel. */
-function emitirToken_(periodo) {
-  periodo = clampPeriodo_(periodo);
+ *  PROTEGIDO POR SENHA: só o instrutor (com a ADMIN_KEY) emite tokens válidos —
+ *  assim ninguém de fora gera um QR para marcar presença sem estar na aula.
+ *  `dados.periodo` (segundos) é a duração escolhida pelo instrutor no painel. */
+function emitirToken_(dados) {
+  var temChave = !!PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (!temChave) {
+    return { ok: false, restrito: true, semChave: true,
+             erro: 'Painel do instrutor protegido. Defina ADMIN_KEY nas Propriedades do Script (Apps Script).' };
+  }
+  if (!chaveAdminOk_(dados && dados.adminKey)) {
+    return { ok: false, restrito: true, erro: 'Chave de administrador incorreta ou ausente.' };
+  }
+  var periodo = clampPeriodo_(dados && dados.periodo);
   var win = janelaPara_(periodo);
   var rotativos = {}, estaticos = {};
   listarAulas_().forEach(function (a) {

@@ -42,7 +42,7 @@ no Gmail comum (mais no Workspace). Para enviar em massa pelo painel, defina a S
 |------|--------|--------|
 | `ENFORCE_TOKEN` | `true` | Exige token válido no QR para registrar presença. `false` = modo aberto. |
 | `ALLOW_STATIC`  | `true` | Aceita também o QR estático (cômodo para avaliação). **Em produção real, use `false`** para forçar só o rotativo. |
-| `ADMIN_KEY`     | (vazio) | **Senha do painel.** O painel (`admin.html`) só devolve dados — nomes, métricas, lista — com essa chave. **Sem `ADMIN_KEY` definida, ninguém acessa o painel** (nem você). Defina-a para usar o painel; o CPF completo aparece só com a chave + a opção "mostrar CPF". |
+| `ADMIN_KEY`     | (vazio) | **Senha dos painéis de staff.** Protege o **painel de presenças** (`admin.html`) E o **painel do instrutor** (`qrcodes.html`, que gera os QR). Sem a chave, ninguém vê dados de aluno **nem emite QR válido**. **Sem `ADMIN_KEY` definida, os dois painéis ficam inacessíveis** (nem você acessa). Mesma chave para os dois (digita uma vez por aba). CPF completo só com a chave + a opção "mostrar CPF". |
 | `SECRET`        | (gerado) | Segredo HMAC que assina os tokens. **Não exponha.** |
 
 Edite em **Configurações do projeto → Propriedades do script**.
@@ -54,7 +54,7 @@ sinalizado pelo campo `ok` (e `status`/`erro`) no corpo JSON. O frontend trata p
 ## Ações da API (POST com corpo JSON `{ "action": "...", ... }`)
 | Ação | Entrada | Retorno |
 |------|---------|---------|
-| `emitirToken` | — | tokens rotativos + estáticos de todas as aulas |
+| `emitirToken` | `adminKey, periodo` | tokens rotativos + estáticos de todas as aulas — **requer ADMIN_KEY** (só o instrutor emite QR) |
 | `registrarPresenca` | `aulaId, nome, cpf, email, consent, token` | `status: registrada \| duplicada \| token \| invalido \| consentimento` |
 | `consultarCertificado` | `cpf` | elegibilidade + dados do certificado + `codigo` |
 | `verificarCertificado` | `codigo` (MILES-2026-XXXXXX) | autenticidade (nome, aulas, CPF mascarado) |

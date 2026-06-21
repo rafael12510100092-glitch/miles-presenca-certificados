@@ -18,6 +18,7 @@
     .dur-pick select:disabled{ opacity:.4; cursor:not-allowed; }
     .qr-box .qr-logo{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:19% !important; height:19% !important;
       object-fit:contain; background:#F4EFE2; padding:4px; border-radius:7px; z-index:2; box-shadow:0 0 0 3px #F4EFE2; }
+    .lock { max-width:440px; margin:1.4rem auto; text-align:center; } .lock .ic { font-size:2rem; }
   </style>
 </head>
 <body>
@@ -27,36 +28,58 @@
     <div class="doc-rule"></div>
 
     <section class="section">
-      <div class="row between" style="align-items:flex-end;gap:1rem">
-        <div class="stack reveal">
-          <span class="eyebrow">Projeto 1 · Painel do instrutor</span>
-          <h1 style="font-size:clamp(1.8rem,4vw,2.6rem)">QR Code das aulas</h1>
-          <p class="lead">Projete na tela durante a aula. Cada QR já tem a aula embutida.
-            No modo <b>rotativo</b>, <b>você escolhe a duração</b> de cada QR — quando ele gira,
-            o print/foto antigo deixa de valer. Mais curto = mais seguro; mais longo = mais tempo para o público escanear.</p>
-        </div>
-        <div class="reveal d2" style="display:flex;gap:.8rem;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end">
-          <label class="dur-pick" for="dur">Duração do QR
-            <select id="dur" aria-label="Duração de cada QR Code">
-              <option value="30">30 segundos</option>
-              <option value="60">1 minuto</option>
-              <option value="120">2 minutos</option>
-              <option value="300">5 minutos</option>
-              <option value="600">10 minutos</option>
-            </select>
-          </label>
-          <div class="switch" role="group" aria-label="Modo do QR">
-            <button id="mode-rot" class="on" type="button" aria-pressed="true">Rotativo (anti-reuso)</button>
-            <button id="mode-stat" type="button" aria-pressed="false">Estático (avaliação)</button>
-          </div>
-        </div>
+      <div class="stack reveal" style="margin-bottom:.4rem">
+        <span class="eyebrow">Projeto 1 · Painel do instrutor · acesso restrito</span>
+        <h1 style="font-size:clamp(1.8rem,4vw,2.6rem)">QR Code das aulas</h1>
       </div>
 
-      <div id="banner" class="notice notice--info hidden" style="margin:1.2rem 0" role="status" aria-live="polite"></div>
+      <!-- TELA DE SENHA -->
+      <div id="lock" class="card card--gold lock hidden">
+        <div class="ic" aria-hidden="true">🔒</div>
+        <h2 style="margin:.3rem 0">Área do instrutor</h2>
+        <p class="muted" style="font-size:.92rem">Gerar QR Codes válidos é restrito ao instrutor —
+          assim ninguém de fora cria um código para marcar presença sem estar na aula. Informe a
+          <b>chave de administrador</b>.</p>
+        <form id="lock-form" style="margin-top:1rem">
+          <div class="field">
+            <label for="lock-key" class="sr-only">Chave de administrador</label>
+            <input class="input" id="lock-key" type="password" autocomplete="current-password" placeholder="Chave de administrador">
+          </div>
+          <button class="btn btn--gold btn--block" type="submit">Acessar painel</button>
+          <div id="lock-msg" class="notice hidden" style="margin-top:.8rem" role="alert"></div>
+        </form>
+      </div>
 
-      <div class="qr-grid" id="qr-grid" style="margin-top:1.4rem"></div>
+      <!-- PAINEL DO INSTRUTOR -->
+      <div id="panel" class="hidden">
+        <div class="row between" style="align-items:flex-end;gap:1rem">
+          <p class="lead" style="max-width:54ch">Projete na tela durante a aula. Cada QR já tem a aula embutida.
+            No modo <b>rotativo</b>, <b>você escolhe a duração</b> de cada QR — quando ele gira,
+            o print/foto antigo deixa de valer.</p>
+          <div style="display:flex;gap:.8rem;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end">
+            <label class="dur-pick" for="dur">Duração do QR
+              <select id="dur" aria-label="Duração de cada QR Code">
+                <option value="30">30 segundos</option>
+                <option value="60">1 minuto</option>
+                <option value="120">2 minutos</option>
+                <option value="300">5 minutos</option>
+                <option value="600">10 minutos</option>
+              </select>
+            </label>
+            <div class="switch" role="group" aria-label="Modo do QR">
+              <button id="mode-rot" class="on" type="button" aria-pressed="true">Rotativo (anti-reuso)</button>
+              <button id="mode-stat" type="button" aria-pressed="false">Estático (avaliação)</button>
+            </div>
+            <button class="btn btn--ghost" id="logout" type="button">Sair</button>
+          </div>
+        </div>
 
-      <p class="muted reveal" style="margin-top:1.4rem;font-size:.86rem" id="legend"></p>
+        <div id="banner" class="notice notice--info hidden" style="margin:1.2rem 0" role="status" aria-live="polite"></div>
+
+        <div class="qr-grid" id="qr-grid" style="margin-top:1.4rem"></div>
+
+        <p class="muted reveal" style="margin-top:1.4rem;font-size:.86rem" id="legend"></p>
+      </div>
     </section>
 
     <footer class="foot">Sem celular para escanear? Use o modo <b>Estático</b> e clique no link
@@ -82,6 +105,22 @@
     var modo = 'rotativo';
     var timer = null;
     var presencaURL = new URL('presenca.html', location.href).href;
+    var adminKey = '', KEYSTORE = 'miles-admin-key';
+
+    function showLock(msg) {
+      clearTimeout(timer);
+      document.getElementById('panel').classList.add('hidden');
+      document.getElementById('lock').classList.remove('hidden');
+      var m = document.getElementById('lock-msg');
+      if (msg) { m.className = 'notice notice--bad'; m.innerHTML = '<span class="ic" aria-hidden="true">⚠</span> ' + MILES.escapeHTML(msg); m.classList.remove('hidden'); }
+      else m.classList.add('hidden');
+      document.getElementById('lock-key').focus();
+    }
+    function showPanel() { document.getElementById('lock').classList.add('hidden'); document.getElementById('panel').classList.remove('hidden'); }
+    function tratarRestrito(r) {
+      if (r && r.restrito) { showLock(r.semChave ? r.erro : 'Chave incorreta. Tente novamente.'); return true; }
+      return false;
+    }
 
     // duração escolhida pelo instrutor (persistida entre sessões)
     var dur = document.getElementById('dur');
@@ -137,8 +176,10 @@
     async function cicloRotativo() {
       clearTimeout(timer);
       try {
-        var r = await MILES.api('emitirToken', { periodo: periodo });
+        var r = await MILES.api('emitirToken', { periodo: periodo, adminKey: adminKey });
+        if (tratarRestrito(r)) return;
         if (!r || !r.ok) throw new Error((r && r.erro) || 'resposta inválida');
+        showPanel();
         aulas.forEach(function (a) { draw(a.aulaId, r.rotativos[a.aulaId]); });
         var restante = Math.max(1500, (r.expiraEm || (Date.now() + periodo * 1000)) - Date.now());
         animarRing(restante);
@@ -159,8 +200,10 @@
     async function modoEstatico() {
       clearTimeout(timer); pararRing();
       try {
-        var r = await MILES.api('emitirToken', { periodo: periodo });
+        var r = await MILES.api('emitirToken', { periodo: periodo, adminKey: adminKey });
+        if (tratarRestrito(r)) return;
         if (!r || !r.ok) throw new Error((r && r.erro) || 'resposta inválida');
+        showPanel();
         aulas.forEach(function (a) { draw(a.aulaId, r.estaticos[a.aulaId]); });
         if (typeof QRCode !== 'undefined') banner.classList.add('hidden');
         legend.textContent = 'Modo estático: códigos fixos, convenientes para avaliação/impressão. ' +
@@ -182,12 +225,34 @@
     btnRot.addEventListener('click', function () { setModo('rotativo'); });
     btnStat.addEventListener('click', function () { setModo('estatico'); });
 
-    setModo('rotativo');
+    // autenticação (chave compartilhada com o painel admin, por aba)
+    function entrar() {
+      if (adminKey && !MILES.useDemo()) { try { sessionStorage.setItem(KEYSTORE, adminKey); } catch (e) {} }
+      showPanel(); setModo('rotativo');
+    }
+    document.getElementById('lock-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      adminKey = document.getElementById('lock-key').value.trim();
+      if (!adminKey) return;
+      entrar();
+    });
+    document.getElementById('logout').addEventListener('click', function () {
+      clearTimeout(timer); adminKey = '';
+      try { sessionStorage.removeItem(KEYSTORE); } catch (e) {}
+      document.getElementById('lock-key').value = ''; showLock('');
+    });
 
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) clearTimeout(timer);
-      else if (modo === 'rotativo') cicloRotativo();
+      else if (modo === 'rotativo' && !document.getElementById('panel').classList.contains('hidden')) cicloRotativo();
     });
+
+    // início: demo abre direto; real exige a senha (tenta a chave já guardada na sessão)
+    if (MILES.useDemo()) { showPanel(); setModo('rotativo'); }
+    else {
+      try { adminKey = sessionStorage.getItem(KEYSTORE) || ''; } catch (e) { adminKey = ''; }
+      if (adminKey) { showPanel(); setModo('rotativo'); } else { showLock(''); }
+    }
   })();
   </script>
 </body>

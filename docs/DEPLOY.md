@@ -147,10 +147,12 @@ git push -u origin main
 
 ## Parte 5 — Senha do painel e ajustes
 
-### 5.1 — Definir a senha do painel (ADMIN_KEY) — IMPORTANTE
-O **painel administrativo** (`admin.html`) mostra dados pessoais (nomes, presença). Por isso ele é
-**protegido por senha verificada no servidor**: sem a `ADMIN_KEY`, **ninguém vê os dados** — nem você.
-Quem só escaneou o QR e voltou ao início **não consegue ver quem foi ao evento**.
+### 5.1 — Definir a senha dos painéis (ADMIN_KEY) — IMPORTANTE
+Os dois **painéis de staff** são **protegidos por senha verificada no servidor** (a mesma `ADMIN_KEY`):
+- **Painel de presenças** (`admin.html`) — mostra nomes/presença. Sem a chave, **ninguém vê quem foi ao evento**.
+- **Painel do instrutor** (`qrcodes.html`) — gera os QR Codes. Sem a chave, **ninguém de fora emite um QR válido** para marcar presença sem estar na aula.
+
+Sem a `ADMIN_KEY`, os dois ficam travados (“Área restrita”) — nem você acessa. É proposital (mais seguro).
 
 1. No editor do **Apps Script** → ⚙ **Configurações do projeto** → role até **Propriedades do script**.
 2. Clique em **Adicionar propriedade do script**:
@@ -203,7 +205,7 @@ O Apps Script **NÃO** atualiza sozinho quando você cola um código novo. Você
 ## ✅ Teste final (2 minutos)
 Com tudo no ar (rodou `setup` + `semearExemplos`):
 1. Abra o site → o rodapé deve dizer 🟢 **Backend online**.
-2. **Presença · QR** → modo *Estático* → clique em “abrir no navegador” na Aula 1 → preencha → registra.
+2. **Presença · QR** → informe a **senha** (`ADMIN_KEY`) → modo *Estático* → clique em “abrir no navegador” na Aula 1 → preencha → registra.
 3. **Certificado** → CPF `111.111.111-11` (Ana, 3/4 → **emite**) · `222.222.222-22` (Bruno, 2/4 → **nega**).
 4. **Verificar** → cole o código do certificado → “certificado autêntico”.
 5. **Painel** → ele pede a **senha** (`ADMIN_KEY`, Parte 5.1); com ela, veja totais, % de conclusão e presenças por aula.
@@ -220,7 +222,7 @@ Com tudo no ar (rodou `setup` + `semearExemplos`):
 | Site abre 🟡 **Modo demonstração** sem querer | `WEB_APP_URL` ainda com o placeholder | Cole a URL real no `config.js` (Parte 3) |
 | E-mail não envia | Faltou autorizar o envio / sem `ADMIN_KEY` | Rode qualquer função uma vez e autorize; defina `ADMIN_KEY` (5.1) |
 | QR não aparece | Lib não carregou | Já vem embutida em `assets/vendor/` — confirme que a pasta subiu ao Netlify |
-| Painel diz **“Área restrita”** / não abre | `ADMIN_KEY` não definida no Apps Script | Defina `ADMIN_KEY` nas Propriedades do Script (Parte 5.1) e informe-a no painel |
+| Painel ou Presença·QR diz **“Área restrita”** | `ADMIN_KEY` não definida no Apps Script | Defina `ADMIN_KEY` nas Propriedades do Script (Parte 5.1) e informe-a no painel |
 | Mudei o `Codigo.gs` e “nada mudou” | Faltou republicar | Apps Script → **Gerenciar implantações → Nova versão** (seção “Como atualizar”) |
 
 ---

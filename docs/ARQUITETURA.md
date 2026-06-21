@@ -91,6 +91,8 @@ distintas ≥ 3`. Retorna `presentes`, `faltantes`, `qtd`, `total` e um `motivo`
    nunca vai para o frontend nem para a planilha (que é pública). Ninguém consegue forjar tokens.
 
 **Defesas combinadas (em profundidade):**
+- O **painel do instrutor é protegido por senha** (`emitirToken` exige `ADMIN_KEY`): só quem tem a chave
+  emite tokens válidos, então ninguém de fora gera um QR para marcar presença sem estar na aula.
 - Janela curta derrota o **screenshot/print** deixado na tela e o reenvio tardio.
 - **Anti-duplicidade** (CPF+aula) derrota o mesmo aluno marcando duas vezes (e limita o reuso
   de um token capturado dentro da janela).

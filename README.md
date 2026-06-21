@@ -117,8 +117,8 @@ git push -u origin main
 
 **Roteiro de avaliação em 2 minutos** (CPFs fictícios criados por `semearExemplos`):
 
-1. **Presença** — `qrcodes.html` → escaneie um QR no celular **ou** (sem celular) clique em
-   *"abrir no navegador"* embaixo de um QR no modo **Estático** → preencha e registre.
+1. **Presença** — `qrcodes.html` → informe a **senha** (`ADMIN_KEY`) → escaneie um QR no celular **ou**
+   (sem celular) clique em *"abrir no navegador"* embaixo de um QR no modo **Estático** → preencha e registre.
 2. **Anti-duplicidade** — escaneie a **mesma** aula de novo → o sistema avisa que a presença **já existia**.
 3. **Certificado — limite exato** — `certificado.html` com **`111.111.111-11`** (Ana, **3/4** → emite no limiar dos 75%).
 4. **Certificado — negado** — **`222.222.222-22`** (Bruno, **2/4** → nega: *"presença insuficiente: 2 de 4 aulas"*).
@@ -141,7 +141,7 @@ planilha. Comparação de tokens em tempo constante. Mais detalhes em [`docs/ARQ
 - **Modo demonstração** — site funciona sem backend (dados fictícios), com selo discreto e status no rodapé.
 - **Verificação de certificado** — o código de verificação realmente valida (página `verificar.html`).
 - **Painel que vira decisão** — % de conclusão, presenças por aula e **exportação CSV** dos elegíveis.
-- **Painel protegido por senha** — o painel administrativo só devolve dados (nomes/métricas) com a `ADMIN_KEY` correta, verificada **no servidor**: quem só escaneou o QR **não vê quem foi ao evento**.
+- **Painéis de staff protegidos por senha** — tanto o painel de presenças (não dá pra ver **quem foi ao evento**) quanto o painel do instrutor (não dá pra **emitir QR** sem ser staff) exigem a `ADMIN_KEY`, verificada **no servidor**.
 - **Privacidade by design** — CPF **mascarado no servidor**, minimização de dados, aviso LGPD com base legal/retenção/DPO, banner de "ambiente de avaliação".
 - **Hardening** — CSP, HSTS, Permissions-Policy e `X-Frame-Options` no Netlify; lib de QR vendorizada (sem depender de CDN).
 - **Acessibilidade** — foco visível por teclado, `aria-live`, rótulos, modal com Esc/foco, contraste AA.
