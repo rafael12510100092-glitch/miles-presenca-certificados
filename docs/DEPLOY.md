@@ -145,15 +145,22 @@ git push -u origin main
 
 ---
 
-## Parte 5 — Ajustes opcionais (recomendados)
+## Parte 5 — Senha do painel e ajustes
 
-### 5.1 — Liberar o envio de certificados por e-mail / CPF completo no painel
-1. Volte ao editor do **Apps Script** → ⚙ **Configurações do projeto** → role até **Propriedades do script**.
+### 5.1 — Definir a senha do painel (ADMIN_KEY) — IMPORTANTE
+O **painel administrativo** (`admin.html`) mostra dados pessoais (nomes, presença). Por isso ele é
+**protegido por senha verificada no servidor**: sem a `ADMIN_KEY`, **ninguém vê os dados** — nem você.
+Quem só escaneou o QR e voltou ao início **não consegue ver quem foi ao evento**.
+
+1. No editor do **Apps Script** → ⚙ **Configurações do projeto** → role até **Propriedades do script**.
 2. Clique em **Adicionar propriedade do script**:
-   - **Propriedade:** `ADMIN_KEY`  ·  **Valor:** uma senha sua (ex.: `miles2026`).
-3. Salve. Agora, no painel (`admin.html`), o botão **“Enviar aos elegíveis”** e o **“mostrar CPF”**
-   pedem essa chave.
+   - **Propriedade:** `ADMIN_KEY`  ·  **Valor:** uma senha forte sua (ex.: `MilesInov@2026`).
+3. **Salve.** Agora, ao abrir o painel, ele pede essa senha; com ela você vê a lista, o **CPF completo**
+   (opção “mostrar CPF”) e pode **enviar certificados por e-mail**.
 
+> ⚠️ **Se você não definir `ADMIN_KEY`, o painel fica inacessível** (mostra “Área restrita”). Isso é
+> proposital — é mais seguro travado do que aberto. Defina a chave para usá-lo.
+>
 > **De qual e-mail os certificados são enviados?** Do **Gmail da conta que publicou o Apps Script**
 > (com o nome “Instituto MILES”). Cota: ~100 destinatários/dia no Gmail comum.
 
@@ -163,13 +170,43 @@ o rotativo (mais seguro). Deixe `true` enquanto estiver demonstrando para a banc
 
 ---
 
+## 🔄 Como atualizar o site que já está no ar
+
+O projeto tem **duas partes** que se atualizam de formas diferentes. Quando você mudar algo, veja qual parte mudou:
+
+### A) Mudou o **frontend** (qualquer coisa na pasta `site/` — HTML, CSS, JS)
+- **Se publicou via GitHub (Caminho A):** é automático. Basta enviar as mudanças pro GitHub que o Netlify
+  **republica sozinho** em ~1 min:
+  ```bash
+  git add .
+  git commit -m "ajustes"
+  git push
+  ```
+- **Se publicou arrastando a pasta (Caminho B):** vá em https://app.netlify.com/drop e **arraste a pasta
+  `site` de novo** (ou, no painel do site → **Deploys** → arraste lá).
+
+### B) Mudou o **backend** (o arquivo `apps-script/Codigo.gs`) — ⚠️ exige um passo manual
+O Apps Script **NÃO** atualiza sozinho quando você cola um código novo. Você precisa **republicar a versão**:
+1. Abra a planilha → **Extensões → Apps Script**.
+2. Cole o `Codigo.gs` novo (substituindo o antigo) e **salve** (`Ctrl+S`).
+3. **Implantar → Gerenciar implantações** → clique no **✏️ (lápis)** da implantação existente.
+4. Em **Versão**, escolha **Nova versão** → **Implantar**.
+5. Pronto. **A URL continua a mesma** — você não precisa mexer no `config.js` nem no Netlify.
+
+> 🧠 **Regra de ouro:** mudou `site/` → atualiza no **Netlify** (push ou arrastar). Mudou `Codigo.gs` →
+> **Gerenciar implantações → Nova versão** no Apps Script. Se mudou os dois, faça os dois.
+
+> Se você editou o `Codigo.gs` e “nada mudou” no site, quase sempre é porque faltou o passo **Nova versão**.
+
+---
+
 ## ✅ Teste final (2 minutos)
 Com tudo no ar (rodou `setup` + `semearExemplos`):
 1. Abra o site → o rodapé deve dizer 🟢 **Backend online**.
 2. **Presença · QR** → modo *Estático* → clique em “abrir no navegador” na Aula 1 → preencha → registra.
 3. **Certificado** → CPF `111.111.111-11` (Ana, 3/4 → **emite**) · `222.222.222-22` (Bruno, 2/4 → **nega**).
 4. **Verificar** → cole o código do certificado → “certificado autêntico”.
-5. **Painel** → veja os totais, % de conclusão e presenças por aula.
+5. **Painel** → ele pede a **senha** (`ADMIN_KEY`, Parte 5.1); com ela, veja totais, % de conclusão e presenças por aula.
 
 ---
 
@@ -183,6 +220,8 @@ Com tudo no ar (rodou `setup` + `semearExemplos`):
 | Site abre 🟡 **Modo demonstração** sem querer | `WEB_APP_URL` ainda com o placeholder | Cole a URL real no `config.js` (Parte 3) |
 | E-mail não envia | Faltou autorizar o envio / sem `ADMIN_KEY` | Rode qualquer função uma vez e autorize; defina `ADMIN_KEY` (5.1) |
 | QR não aparece | Lib não carregou | Já vem embutida em `assets/vendor/` — confirme que a pasta subiu ao Netlify |
+| Painel diz **“Área restrita”** / não abre | `ADMIN_KEY` não definida no Apps Script | Defina `ADMIN_KEY` nas Propriedades do Script (Parte 5.1) e informe-a no painel |
+| Mudei o `Codigo.gs` e “nada mudou” | Faltou republicar | Apps Script → **Gerenciar implantações → Nova versão** (seção “Como atualizar”) |
 
 ---
 

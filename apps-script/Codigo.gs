@@ -295,9 +295,24 @@ function verificarCertificado_(dados) {
            mensagem: 'Nenhum certificado corresponde a este código.' };
 }
 
-/** Painel administrativo (somente leitura). CPF sai MASCARADO por padrão. */
+/**
+ * Painel administrativo (somente leitura) — PROTEGIDO POR SENHA.
+ * Sem a ADMIN_KEY correta, NENHUM dado de aluno (nem nomes, nem métricas) é
+ * devolvido — assim quem só escaneou o QR não consegue ver quem foi ao evento.
+ * O CPF sai mascarado por padrão; completo apenas com `cpfCompleto: true`.
+ */
 function listarPresencas_(dados) {
-  var admin = chaveAdminOk_(dados && dados.adminKey);
+  var temChave = !!PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (!temChave) {
+    return { ok: false, restrito: true, semChave: true,
+             erro: 'Painel protegido. Defina ADMIN_KEY nas Propriedades do Script (Apps Script) para acessar.' };
+  }
+  if (!chaveAdminOk_(dados && dados.adminKey)) {
+    return { ok: false, restrito: true,
+             erro: 'Chave de administrador incorreta ou ausente.' };
+  }
+  var completo = dados && (dados.cpfCompleto === true || dados.cpfCompleto === 'true');
+
   var sh = abaPresencas_();
   var linhas = sh.getDataRange().getValues();
   var iAula = CAB_PRESENCAS.indexOf('aulaId');
@@ -320,7 +335,7 @@ function listarPresencas_(dados) {
     var presentes = Object.keys(a.aulas).map(Number).sort(function (x, y) { return x - y; });
     return {
       nome: a.nome,
-      cpf: admin ? formatarCpf_(cpf) : mascararCpf_(cpf), // CPF completo só com ADMIN_KEY
+      cpf: completo ? formatarCpf_(cpf) : mascararCpf_(cpf),
       presentes: presentes, qtd: presentes.length,
       elegivel: presentes.length >= MIN_PRESENCAS,
     };
@@ -328,7 +343,7 @@ function listarPresencas_(dados) {
 
   var elegiveis = alunos.filter(function (a) { return a.elegivel; }).length;
   return {
-    ok: true, total: TOTAL_AULAS, minimo: MIN_PRESENCAS, admin: admin,
+    ok: true, total: TOTAL_AULAS, minimo: MIN_PRESENCAS, admin: true,
     resumo: {
       alunos: alunos.length, elegiveis: elegiveis,
       naoElegiveis: alunos.length - elegiveis,

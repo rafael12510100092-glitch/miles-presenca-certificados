@@ -66,7 +66,7 @@ miles-presenca-certificados/
 │   ├── presenca.html    Projeto 1 — formulário do aluno (abre ao escanear)
 │   ├── certificado.html Projeto 2 — verificação + emissão/negação
 │   ├── verificar.html   Projeto 2 — autenticidade do certificado pelo código
-│   ├── admin.html       painel (somente leitura) — métricas, CSV, CPF mascarado
+│   ├── admin.html       painel (protegido por senha) — métricas, CSV, CPF mascarado
 │   ├── config.js        ÚNICO arquivo a editar (URL do Apps Script + modo demo)
 │   └── assets/          styles.css · app.js · miles-logo.png · vendor/qrcode.min.js
 └── docs/                ARQUITETURA · PLANILHA · DEPLOY · assets/ (prints)
@@ -124,7 +124,7 @@ git push -u origin main
 4. **Certificado — negado** — **`222.222.222-22`** (Bruno, **2/4** → nega: *"presença insuficiente: 2 de 4 aulas"*).
 5. **Certificado — completo** — **`333.333.333-33`** (Carla, **4/4** → emite).
 6. **Autenticidade** — copie o **código** do rodapé do certificado em `verificar.html` → confirma nome e aulas.
-7. **Painel** — `admin.html` → totais, **% de conclusão**, **presenças por aula**, **Exportar CSV** e CPF mascarado.
+7. **Painel** — `admin.html` → pede a **senha** (`ADMIN_KEY`); com ela: totais, **% de conclusão**, **presenças por aula**, **Exportar CSV** e CPF mascarado.
 
 ## 🔒 Anti-reuso do QR (bônus)
 O QR exibido na aula carrega um **token assinado (HMAC-SHA256)**. O **instrutor escolhe a duração**
@@ -141,6 +141,7 @@ planilha. Comparação de tokens em tempo constante. Mais detalhes em [`docs/ARQ
 - **Modo demonstração** — site funciona sem backend (dados fictícios), com selo discreto e status no rodapé.
 - **Verificação de certificado** — o código de verificação realmente valida (página `verificar.html`).
 - **Painel que vira decisão** — % de conclusão, presenças por aula e **exportação CSV** dos elegíveis.
+- **Painel protegido por senha** — o painel administrativo só devolve dados (nomes/métricas) com a `ADMIN_KEY` correta, verificada **no servidor**: quem só escaneou o QR **não vê quem foi ao evento**.
 - **Privacidade by design** — CPF **mascarado no servidor**, minimização de dados, aviso LGPD com base legal/retenção/DPO, banner de "ambiente de avaliação".
 - **Hardening** — CSP, HSTS, Permissions-Policy e `X-Frame-Options` no Netlify; lib de QR vendorizada (sem depender de CDN).
 - **Acessibilidade** — foco visível por teclado, `aria-live`, rótulos, modal com Esc/foco, contraste AA.

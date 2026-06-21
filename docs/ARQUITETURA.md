@@ -114,8 +114,11 @@ login Google. O rotativo já entrega o essencial do bônus sem fricção para o 
   aceite, e o backend **recusa** o registro sem `consent = true`. O aviso traz **base legal**
   (consentimento, art. 7º, I), **finalidade**, **retenção** e **contato do encarregado (DPO)**.
 - **Minimização:** coletamos só nome, CPF e e-mail — **não** guardamos `userAgent`/IP.
-- **Mascaramento no servidor:** `listarPresencas` devolve o CPF **mascarado** (`•••.•••.789-09`)
-  por padrão; o CPF completo só sai com a `ADMIN_KEY` correta. Não é “esconder no cliente”.
+- **Painel protegido por senha (no servidor):** `listarPresencas` **não devolve nenhum dado**
+  (nem nomes, nem métricas) sem a `ADMIN_KEY` correta — então quem apenas escaneou o QR e voltou ao
+  início **não consegue ver quem foi ao evento**. A `admin.html` exibe uma tela de senha; a verificação
+  é server-side (comparação em tempo constante). O CPF sai **mascarado** (`•••.•••.789-09`) mesmo após
+  autenticar; o completo só com a opção “mostrar CPF”. Não é “esconder no cliente”.
 - `consultarCertificado` é **só por CPF** (sem busca por nome) para não permitir associar
   nome→CPF de terceiros. CPF coletado **sem validar dígitos** (conforme a tarefa).
 - A tela de presença avisa que é **ambiente de avaliação** (usar dados fictícios). A planilha

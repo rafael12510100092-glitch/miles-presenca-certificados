@@ -15,6 +15,8 @@
     .mcard { background:var(--bg-3); border:1px solid var(--line-soft); border-radius:var(--radius-sm); padding:.8rem .9rem; }
     .mcard .n { font-family:var(--serif); font-size:1.5rem; color:var(--gold-lt); line-height:1; }
     .mcard .t { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-faint); font-weight:700; margin-top:.2rem; }
+    .lock { max-width:440px; margin:1.4rem auto; text-align:center; }
+    .lock .ic { font-size:2rem; }
   </style>
 </head>
 <body>
@@ -24,36 +26,58 @@
     <div class="doc-rule"></div>
 
     <section class="section">
-      <div class="row between reveal" style="align-items:flex-end">
-        <div class="stack">
-          <span class="eyebrow">Acompanhamento · somente leitura</span>
-          <h1 style="font-size:clamp(1.8rem,4vw,2.5rem)">Painel de presenças</h1>
+      <div class="stack reveal" style="margin-bottom:.4rem">
+        <span class="eyebrow">Acompanhamento · acesso restrito</span>
+        <h1 style="font-size:clamp(1.8rem,4vw,2.5rem)">Painel de presenças</h1>
+      </div>
+
+      <!-- TELA DE SENHA (acesso restrito) -->
+      <div id="lock" class="card card--gold lock hidden">
+        <div class="ic" aria-hidden="true">🔒</div>
+        <h2 style="margin:.3rem 0">Área restrita</h2>
+        <p class="muted" style="font-size:.92rem">Este painel mostra dados pessoais dos participantes.
+          Informe a <b>chave de administrador</b> para acessar.</p>
+        <form id="lock-form" style="margin-top:1rem">
+          <div class="field">
+            <label for="lock-key" class="sr-only">Chave de administrador</label>
+            <input class="input" id="lock-key" type="password" autocomplete="current-password" placeholder="Chave de administrador">
+          </div>
+          <button class="btn btn--gold btn--block" type="submit">Acessar painel</button>
+          <div id="lock-msg" class="notice hidden" style="margin-top:.8rem" role="alert"></div>
+        </form>
+      </div>
+
+      <!-- PAINEL (após autenticar) -->
+      <div id="panel" class="hidden">
+        <div class="row between" style="align-items:flex-end;margin-bottom:.2rem">
+          <span class="muted" style="font-size:.84rem">Sessão de administrador ativa.</span>
+          <div class="row">
+            <label class="row" style="gap:.45rem;font-size:.86rem;font-weight:600;cursor:pointer">
+              <input type="checkbox" id="show-cpf" style="width:18px;height:18px;accent-color:var(--gold)"> mostrar CPF completo
+            </label>
+            <button class="btn btn--gold" id="enviar" type="button">✉ Enviar aos elegíveis</button>
+            <button class="btn btn--ghost" id="export" type="button">↓ Exportar CSV</button>
+            <button class="btn btn--ghost" id="refresh" type="button">↻ Atualizar</button>
+            <button class="btn btn--ghost" id="logout" type="button">Sair</button>
+          </div>
         </div>
-        <div class="row">
-          <label class="row" style="gap:.45rem;font-size:.86rem;font-weight:600;cursor:pointer">
-            <input type="checkbox" id="show-cpf" style="width:18px;height:18px;accent-color:var(--gold)"> mostrar CPF
-          </label>
-          <button class="btn btn--gold" id="enviar" type="button">✉ Enviar aos elegíveis</button>
-          <button class="btn btn--ghost" id="export" type="button">↓ Exportar CSV</button>
-          <button class="btn btn--ghost" id="refresh" type="button">↻ Atualizar</button>
+
+        <div class="card reveal d1" style="margin:1.2rem 0">
+          <div class="stat" id="stat" role="status" aria-live="polite"><span class="muted">Carregando…</span></div>
+          <div class="metricas" id="metricas"></div>
         </div>
-      </div>
 
-      <div class="card reveal d1" style="margin:1.2rem 0">
-        <div class="stat" id="stat" role="status" aria-live="polite"><span class="muted">Carregando…</span></div>
-        <div class="metricas" id="metricas"></div>
-      </div>
+        <div class="field" style="max-width:340px">
+          <label for="busca" class="sr-only">Filtrar</label>
+          <input class="input" id="busca" type="text" placeholder="Filtrar por nome ou CPF…">
+        </div>
 
-      <div class="field" style="max-width:340px">
-        <label for="busca" class="sr-only">Filtrar</label>
-        <input class="input" id="busca" type="text" placeholder="Filtrar por nome ou CPF…">
+        <div id="wrap-tabela"></div>
       </div>
-
-      <div id="wrap-tabela"></div>
     </section>
 
-    <footer class="foot">O CPF aparece <b>mascarado por padrão</b> (mascarado no próprio servidor). Para ver completo,
-      defina <code>ADMIN_KEY</code> nas Propriedades do Apps Script e marque "mostrar CPF".</footer>
+    <footer class="foot">Painel protegido por senha (verificada no servidor). Os mesmos dados — com CPF mascarado —
+      nunca são devolvidos sem a chave. Defina <code>ADMIN_KEY</code> nas Propriedades do Apps Script.</footer>
   </div>
 
   <script src="config.js"></script>
@@ -62,7 +86,18 @@
   (function () {
     var $ = MILES.$;
     MILES.mountTopbar('admin.html');
-    var dados = null, adminKey = '';
+    var dados = null, adminKey = '', cpfCompleto = false;
+    var KEYSTORE = 'miles-admin-key';
+
+    function showLock(msg) {
+      $('#panel').classList.add('hidden');
+      $('#lock').classList.remove('hidden');
+      var m = $('#lock-msg');
+      if (msg) { m.className = 'notice notice--bad'; m.innerHTML = '<span class="ic" aria-hidden="true">⚠</span> ' + MILES.escapeHTML(msg); m.classList.remove('hidden'); }
+      else m.classList.add('hidden');
+      $('#lock-key').focus();
+    }
+    function showPanel() { $('#lock').classList.add('hidden'); $('#panel').classList.remove('hidden'); }
 
     function linha(a) {
       var dots = '';
@@ -87,7 +122,6 @@
         '<div><div class="b" style="color:var(--ok)">' + r.elegiveis + '</div><div class="l">Elegíveis</div></div>' +
         '<div><div class="b" style="color:var(--bad)">' + r.naoElegiveis + '</div><div class="l">Pendentes</div></div>' +
         '<div><div class="b">' + r.taxaConclusao + '%</div><div class="l">Conclusão</div></div>';
-
       var por = r.porAula || {}, mc = '';
       for (var i = 1; i <= dados.total; i++)
         mc += '<div class="mcard"><div class="n">' + (por[i] || 0) + '</div><div class="t">Presenças · Aula ' + i + '</div></div>';
@@ -108,16 +142,19 @@
     }
 
     async function carregar() {
-      $('#stat').innerHTML = '<span class="muted">Carregando…</span>';
+      // demo: sem backend, mostra direto (dados fictícios)
       try {
-        var r = await MILES.api('listarPresencas', adminKey ? { adminKey: adminKey } : {});
-        if (!r.ok) throw new Error(r.erro || 'resposta inválida');
-        dados = r; render();
-        if (adminKey && !r.admin) { // chave não confere
-          $('#show-cpf').checked = false; adminKey = '';
-          alert('Chave de admin incorreta ou ADMIN_KEY não definida no Apps Script. O CPF continua mascarado.');
+        var payload = MILES.useDemo() ? {} : { adminKey: adminKey, cpfCompleto: cpfCompleto };
+        var r = await MILES.api('listarPresencas', payload);
+        if (!r.ok) {
+          if (r.restrito) { showLock(r.semChave ? r.erro : 'Chave incorreta. Tente novamente.'); }
+          else { showPanel(); $('#stat').innerHTML = '<span class="badge badge--bad">erro</span>'; }
+          return;
         }
+        dados = r; showPanel(); render();
+        if (!MILES.useDemo() && adminKey) { try { sessionStorage.setItem(KEYSTORE, adminKey); } catch (e) {} }
       } catch (e) {
+        showPanel();
         $('#stat').innerHTML = '<span class="badge badge--bad">erro</span>';
         $('#wrap-tabela').innerHTML = '<div class="card"><div class="notice notice--bad"><span class="ic" aria-hidden="true">⚠</span><span>' +
           MILES.escapeHTML(e.message) + ' — configure o <code>config.js</code> e publique o Apps Script.</span></div></div>';
@@ -141,33 +178,40 @@
 
     async function enviarElegiveis() {
       if (!dados || !dados.resumo.elegiveis) { alert('Não há alunos elegíveis para enviar.'); return; }
-      var key = adminKey;
-      if (!key && !MILES.useDemo()) { key = prompt('Chave de admin (ADMIN_KEY) para enviar os certificados por e-mail:'); if (!key) return; }
       if (!confirm('Enviar o certificado por e-mail a ' + dados.resumo.elegiveis + ' aluno(s) elegível(is)?')) return;
       var b = $('#enviar'); b.disabled = true; var t = b.innerHTML; b.innerHTML = '<span class="spin" aria-hidden="true"></span> Enviando…';
       try {
-        var r = await MILES.api('enviarCertificadosElegiveis', { adminKey: key, siteUrl: location.origin });
-        if (r.ok) { if (key) adminKey = key;
-          alert('✓ ' + r.enviados + ' certificado(s) enviado(s)' + (r.semEmail ? ' · ' + r.semEmail + ' sem e-mail' : '') +
-            (r.demo ? '\n(demonstração — nenhum e-mail real foi enviado)' : '') + '.'); }
+        var r = await MILES.api('enviarCertificadosElegiveis', { adminKey: adminKey, siteUrl: location.origin });
+        if (r.ok) alert('✓ ' + r.enviados + ' certificado(s) enviado(s)' + (r.semEmail ? ' · ' + r.semEmail + ' sem e-mail' : '') +
+          (r.demo ? '\n(demonstração — nenhum e-mail real foi enviado)' : '') + '.');
         else alert('⚠ ' + (r.erro || 'Falha ao enviar.'));
       } catch (e) { alert('⚠ ' + e.message); }
       finally { b.disabled = false; b.innerHTML = t; }
     }
 
+    $('#lock-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      adminKey = $('#lock-key').value.trim();
+      if (!adminKey) return;
+      carregar();
+    });
     $('#enviar').addEventListener('click', enviarElegiveis);
     $('#refresh').addEventListener('click', carregar);
     $('#export').addEventListener('click', exportarCSV);
     $('#busca').addEventListener('input', render);
-    $('#show-cpf').addEventListener('change', function () {
-      if (this.checked) {
-        var k = prompt('Chave de admin (ADMIN_KEY do Apps Script) para exibir o CPF completo:');
-        if (!k) { this.checked = false; return; }
-        adminKey = k;
-      } else { adminKey = ''; }
-      carregar();
+    $('#show-cpf').addEventListener('change', function () { cpfCompleto = this.checked; carregar(); });
+    $('#logout').addEventListener('click', function () {
+      adminKey = ''; cpfCompleto = false; dados = null;
+      try { sessionStorage.removeItem(KEYSTORE); } catch (e) {}
+      $('#lock-key').value = ''; showLock('');
     });
-    carregar();
+
+    // início: demo abre direto; real exige senha (tenta a chave guardada na sessão)
+    if (MILES.useDemo()) { carregar(); }
+    else {
+      try { adminKey = sessionStorage.getItem(KEYSTORE) || ''; } catch (e) { adminKey = ''; }
+      if (adminKey) carregar(); else showLock('');
+    }
   })();
   </script>
 </body>

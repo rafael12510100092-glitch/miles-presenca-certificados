@@ -42,7 +42,7 @@ no Gmail comum (mais no Workspace). Para enviar em massa pelo painel, defina a S
 |------|--------|--------|
 | `ENFORCE_TOKEN` | `true` | Exige token válido no QR para registrar presença. `false` = modo aberto. |
 | `ALLOW_STATIC`  | `true` | Aceita também o QR estático (cômodo para avaliação). **Em produção real, use `false`** para forçar só o rotativo. |
-| `ADMIN_KEY`     | (vazio) | Se definido, o painel só mostra o **CPF completo** quando essa chave é enviada (`adminKey`). Sem ela, o CPF sai sempre **mascarado**. |
+| `ADMIN_KEY`     | (vazio) | **Senha do painel.** O painel (`admin.html`) só devolve dados — nomes, métricas, lista — com essa chave. **Sem `ADMIN_KEY` definida, ninguém acessa o painel** (nem você). Defina-a para usar o painel; o CPF completo aparece só com a chave + a opção "mostrar CPF". |
 | `SECRET`        | (gerado) | Segredo HMAC que assina os tokens. **Não exponha.** |
 
 Edite em **Configurações do projeto → Propriedades do script**.
