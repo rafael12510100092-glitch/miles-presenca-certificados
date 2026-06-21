@@ -195,6 +195,20 @@
     var bar = $('#topbar');
     if (bar) bar.innerHTML = brandHTML(active);
     initDemoBadge();
+    initGlow();
+  }
+
+  /* ---------- Spotlight dourado seguindo o cursor (cartões/linhas) ---------- */
+  var glowOn = false;
+  function initGlow() {
+    if (glowOn) return; glowOn = true;
+    document.addEventListener('pointermove', function (e) {
+      var el = e.target && e.target.closest ? e.target.closest('.card, .index-row, .framed') : null;
+      if (!el) return;
+      var r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    }, { passive: true });
   }
 
   /* ---------- Badge de modo demonstração ---------- */
